@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
     `;
 
     const emailData = {
-      from: "Maxilocal Contact <noreply@maxilocal.fr>",
+      from: "onboarding@resend.dev",
       to: ["maxilocal.pro@gmail.com"],
       subject: `Nouveau contact: ${firstName} ${lastName} - ${company}`,
       html: emailHtml,
@@ -76,11 +76,12 @@ Deno.serve(async (req: Request) => {
       }
     );
 
+    const responseData = await resendResponse.json();
+
     if (!resendResponse.ok) {
-      const errorText = await resendResponse.text();
-      console.error("Resend error:", errorText);
+      console.error("Resend error:", responseData);
       return new Response(
-        JSON.stringify({ error: "Failed to send email" }),
+        JSON.stringify({ error: "Failed to send email", details: responseData }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -98,7 +99,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error("Error processing request:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", details: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
