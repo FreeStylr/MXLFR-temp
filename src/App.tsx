@@ -145,7 +145,7 @@ function App() {
     {
       icon: Palette,
       title: 'Adaptation & Déploiement de Marque',
-      description: 'Cohrence de marque nationale avec personnalisation territoriale'
+      description: 'Cohérence de marque (grands groupes, PME) avec personnalisation territoriale'
     },
     {
       icon: BarChart3,
@@ -418,7 +418,7 @@ function App() {
             Économies locales, systèmes intelligents
           </h2>
           <p className="text-lg sm:text-xl text-neutral-600 leading-relaxed mb-6">
-            Chaque territoire possède son propre écosystème, ses dynamiques, ses besoins. Nous créons les ponts qui permettent aux marques d'apporter de la valeur là où elle compte vraiment — au niveau local.
+            Chaque territoire possède son propre écosystème, ses dynamiques, ses besoins. Nous créons les ponts qui permettent aux marques, PME et entreprises locales d'apporter de la valeur là où elle compte vraiment — au niveau local.
           </p>
           <p className="text-lg sm:text-xl text-neutral-600 leading-relaxed">
             Notre technologie identifie les opportunités, active les bons canaux, et mesure l'impact réel sur les communautés. Parce que la croissance durable naît de la proximité.
@@ -443,7 +443,7 @@ function App() {
               </div>
               <h3 className="text-xl font-bold text-neutral-900 mb-3">Ancrage Local</h3>
               <p className="text-neutral-600 leading-relaxed">
-                Nous comprenons les spécificités de chaque territoire pour créer des connexions authentiques entre marques et communautés locales.
+                Nous comprenons les spécificités de chaque territoire pour créer des connexions authentiques entre entreprises (marques nationales, PME, commerces locaux) et communautés.
               </p>
             </div>
 
@@ -463,7 +463,7 @@ function App() {
               </div>
               <h3 className="text-xl font-bold text-neutral-900 mb-3">Impact Mesurable</h3>
               <p className="text-neutral-600 leading-relaxed">
-                Visibilité claire sur les résultats : où votre marque crée de la valeur, comment les territoires répondent, quel impact économique local.
+                Visibilité claire sur les résultats : où votre entreprise crée de la valeur, comment les territoires répondent, quel impact économique local.
               </p>
             </div>
           </div>
@@ -476,7 +476,7 @@ function App() {
             Plateforme d'Activation Territoriale
           </h2>
           <p className="text-center text-neutral-600 mb-16 text-lg max-w-3xl mx-auto">
-            Les outils et méthodes pour faire rayonner votre marque au cœur des territoires — avec intelligence, respect et résultats tangibles.
+            Les outils et méthodes pour faire rayonner votre entreprise (marque nationale, PME ou commerce local) au cœur des territoires — avec intelligence, respect et résultats tangibles.
           </p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -567,7 +567,7 @@ function App() {
               </div>
               <h3 className="text-xl font-bold text-neutral-900 mb-2">Industriels & Fabricants</h3>
               <p className="text-neutral-600 text-sm">
-                Marques nationales et internationales cherchant une pénétration locale
+                Marques nationales, PME et entreprises régionales cherchant une pénétration locale authentique
               </p>
             </div>
 
@@ -645,7 +645,7 @@ function App() {
                 <span className="text-base font-medium text-teal-400">France</span>
               </div>
               <p className="text-gray-400 text-sm mb-4">
-                Plateforme d'activation territoriale pour marques industrielles
+                Plateforme d'activation territoriale pour entreprises et marques
               </p>
             </div>
 
