@@ -117,7 +117,7 @@ function App() {
   const zones = [
     { name: 'Nice', isPilot: false },
     { name: 'Toulouse', isPilot: false },
-    { name: 'Montpellier', isPilot: false },
+    { name: 'Montpellier', isPilot: true },
     { name: 'Sète', isPilot: true },
     { name: 'Agde', isPilot: true },
     { name: 'Le Puy', isPilot: false },
