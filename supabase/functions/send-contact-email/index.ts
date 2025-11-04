@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
       reply_to: email,
     };
 
-    const RESEND_API_KEY = "re_fr932V9f_PnbgJiPvqztAGVQs1JbhPEPE";
+    const RESEND_API_KEY = "re_dGCzJrSp_85bmpxsK2yCib5Y7PXH9n43P";
 
     const resendResponse = await fetch(
       "https://api.resend.com/emails",
