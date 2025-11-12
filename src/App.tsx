@@ -276,10 +276,24 @@ function App() {
           }
         }
 
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+
+        .animate-slideIn {
+          animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .pulse-node { animation: none !important; }
           .hero-headline, .hero-subheadline, .hero-cta { animation: none !important; opacity: 1 !important; }
           .animate-fadeIn { animation: none !important; }
+          .animate-slideIn { animation: none !important; }
         }
       `}</style>
 
@@ -338,27 +352,73 @@ function App() {
       </header>
 
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 xl:hidden bg-white/95 backdrop-blur-lg">
-          <nav className="flex flex-col items-center justify-center h-full space-y-8 text-center">
-            <button onClick={() => scrollToSection('accueil')} className="text-2xl text-neutral-900 hover:text-primary-600 transition-colors font-medium">
-              Accueil
-            </button>
-            <button onClick={() => scrollToSection('mission')} className="text-2xl text-neutral-900 hover:text-primary-600 transition-colors font-medium">
-              Concept
-            </button>
-            <button onClick={() => scrollToSection('services')} className="text-2xl text-neutral-900 hover:text-primary-600 transition-colors font-medium">
-              Solutions
-            </button>
-            <button onClick={() => scrollToSection('technologie')} className="text-2xl text-neutral-900 hover:text-primary-600 transition-colors font-medium">
-              Technologie
-            </button>
-            <button onClick={openContactModal} className="text-2xl text-neutral-900 hover:text-primary-600 transition-colors font-medium">
-              Entrer en relation
-            </button>
-            <a href="tel:0769248418" className="flex items-center gap-3 px-8 py-4 rounded-lg font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xl">
-              <Phone className="w-5 h-5" />
-              07 69 24 84 18
-            </a>
+        <div className="fixed inset-0 z-40 xl:hidden">
+          <div className="absolute inset-0 bg-neutral-900/95 backdrop-blur-md" onClick={() => setIsMenuOpen(false)}></div>
+          <nav className="relative h-full flex flex-col bg-white shadow-2xl max-w-xs w-full ml-auto animate-slideIn">
+            <div className="flex items-center justify-between p-6 border-b border-neutral-200">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-bold text-lg text-neutral-900">Maxilocal</span>
+              </div>
+              <button
+                onClick={() => setIsMenuOpen(false)}
+                className="p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-neutral-600" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-6">
+              <div className="space-y-1 px-4">
+                <button
+                  onClick={() => scrollToSection('accueil')}
+                  className="w-full text-left px-4 py-3 rounded-lg text-neutral-700 hover:bg-primary-50 hover:text-primary-700 transition-all font-medium flex items-center gap-3"
+                >
+                  <div className="w-2 h-2 rounded-full bg-primary-500"></div>
+                  Accueil
+                </button>
+                <button
+                  onClick={() => scrollToSection('mission')}
+                  className="w-full text-left px-4 py-3 rounded-lg text-neutral-700 hover:bg-primary-50 hover:text-primary-700 transition-all font-medium flex items-center gap-3"
+                >
+                  <div className="w-2 h-2 rounded-full bg-primary-500"></div>
+                  Concept
+                </button>
+                <button
+                  onClick={() => scrollToSection('services')}
+                  className="w-full text-left px-4 py-3 rounded-lg text-neutral-700 hover:bg-primary-50 hover:text-primary-700 transition-all font-medium flex items-center gap-3"
+                >
+                  <div className="w-2 h-2 rounded-full bg-primary-500"></div>
+                  Solutions
+                </button>
+                <button
+                  onClick={() => scrollToSection('technologie')}
+                  className="w-full text-left px-4 py-3 rounded-lg text-neutral-700 hover:bg-primary-50 hover:text-primary-700 transition-all font-medium flex items-center gap-3"
+                >
+                  <div className="w-2 h-2 rounded-full bg-primary-500"></div>
+                  Technologie
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-neutral-200 p-4 space-y-3">
+              <button
+                onClick={openContactModal}
+                className="w-full btn-primary bg-neutral-900 hover:bg-neutral-800 text-white px-6 py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Send className="w-4 h-4" />
+                Entrer en relation
+              </button>
+              <a
+                href="tel:0769248418"
+                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl font-semibold bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg hover:shadow-xl transition-all"
+              >
+                <Phone className="w-4 h-4" />
+                07 69 24 84 18
+              </a>
+            </div>
           </nav>
         </div>
       )}
