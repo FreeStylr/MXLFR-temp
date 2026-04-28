@@ -1,3 +1,18 @@
+Use this as the full QR page fix.
+
+This version does the things that matter:
+
+the video is mounted only in video state
+the choice buttons are mounted only in choice state
+the transition happens only on native onEnded
+there is no onTimeUpdate fallback
+there is no fullscreen request
+playback is reset to 0 every time
+it uses the newer video filename:
+/vinocap_demo_video_qr.mp4
+
+If your current MP4 filename is different, change only that one src line.
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Wine, Search, ChevronLeft, AlertCircle } from 'lucide-react';
@@ -19,13 +34,6 @@ function VideoPlayer({ onComplete }: { onComplete: () => void }) {
   const handleEnded = useCallback(() => {
     if (completedRef.current) return;
     completedRef.current = true;
-
-    try {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      }
-    } catch (_) {}
-
     onComplete();
   }, [onComplete]);
 
@@ -39,17 +47,9 @@ function VideoPlayer({ onComplete }: { onComplete: () => void }) {
     const start = async () => {
       try {
         await vid.play();
-      } catch (_) {}
-
-      try {
-        if (vid.requestFullscreen) {
-          await vid.requestFullscreen();
-        } else if (
-          (vid as unknown as { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen
-        ) {
-          (vid as unknown as { webkitEnterFullscreen: () => void }).webkitEnterFullscreen();
-        }
-      } catch (_) {}
+      } catch (_) {
+        // swallow autoplay/play errors; user interaction already triggered this flow
+      }
     };
 
     start();
@@ -82,6 +82,7 @@ export function QREntryPage() {
     meta.name = 'robots';
     meta.content = 'noindex, nofollow';
     document.head.appendChild(meta);
+
     return () => {
       document.head.removeChild(meta);
     };
@@ -99,17 +100,19 @@ export function QREntryPage() {
   const handleCodeSubmit = () => {
     const trimmed = code.trim();
     if (!trimmed) return;
+
     setCodeError('');
     const slug = DEMO_CODE_MAP[trimmed];
+
     if (slug) {
-      navigate(`/vin/carte/${slug}`);
+      navigate(`/vinocap/carte/${slug}`);
     } else {
       setCodeError('Code non reconnu. Vérifiez-le ou explorez les domaines disponibles.');
     }
   };
 
-  const goDiscover = () => navigate('/vin/decouvrir');
-  const goAllDomaines = () => navigate('/vin/domaines');
+  const goDiscover = () => navigate('/vinocap/decouvrir');
+  const goAllDomaines = () => navigate('/vinocap/domaines');
 
   if (stage === 'codeEntry') {
     return (
@@ -132,7 +135,10 @@ export function QREntryPage() {
 
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6"
-            style={{ background: 'rgba(34,199,201,0.12)', border: '1px solid rgba(34,199,201,0.25)' }}
+            style={{
+              background: 'rgba(34,199,201,0.12)',
+              border: '1px solid rgba(34,199,201,0.25)',
+            }}
           >
             <Search className="w-5 h-5" style={{ color: '#22C7C9' }} />
           </div>
@@ -158,7 +164,9 @@ export function QREntryPage() {
             className="w-full text-center text-2xl font-bold tracking-[0.3em] py-4 rounded-2xl mb-3 outline-none transition-all"
             style={{
               background: 'rgba(255,255,255,0.06)',
-              border: codeError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(121,215,242,0.25)',
+              border: codeError
+                ? '1px solid rgba(239,68,68,0.5)'
+                : '1px solid rgba(121,215,242,0.25)',
               color: '#FCFBF7',
             }}
           />
@@ -195,7 +203,10 @@ export function QREntryPage() {
         <div className="w-full max-w-sm mx-auto text-center">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6"
-            style={{ background: 'rgba(34,199,201,0.12)', border: '1px solid rgba(34,199,201,0.25)' }}
+            style={{
+              background: 'rgba(34,199,201,0.12)',
+              border: '1px solid rgba(34,199,201,0.25)',
+            }}
           >
             <Wine className="w-6 h-6" style={{ color: '#22C7C9' }} />
           </div>
@@ -206,7 +217,7 @@ export function QREntryPage() {
             explorer VinoCap ?
           </h2>
           <p className="text-sm mb-10 leading-relaxed" style={{ color: 'rgba(121,215,242,0.55)' }}>
-            Cap d'Agde Méditerranée · 2026
+            Cap d&apos;Agde Méditerranée · 2026
           </p>
 
           <div className="space-y-3">
@@ -234,7 +245,7 @@ export function QREntryPage() {
                 color: '#FCFBF7',
               }}
             >
-              <span>J'ai un code domaine</span>
+              <span>J&apos;ai un code domaine</span>
               <ArrowRight className="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform duration-200" />
             </button>
           </div>
@@ -286,9 +297,13 @@ export function QREntryPage() {
             WebkitBackdropFilter: 'blur(8px)',
           }}
         >
-          J'ai déjà un code →
+          J&apos;ai déjà un code →
         </button>
       </div>
     </div>
   );
 }
+
+The important part is the VideoPlayer.
+
+If you want, paste your current VideoPlayer block after you apply it and I’ll verify it fast.
