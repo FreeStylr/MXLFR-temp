@@ -13,14 +13,21 @@ const DEMO_CODE_MAP: Record<string, string> = {
 type Stage = 'poster' | 'video' | 'choice' | 'codeEntry';
 
 // ── VideoStage ───────────────────────────────────────────────────────────────
-// Plays the video and shows an explicit "Continuer" button when done.
-// If autoplay fails a "Lancer la vidéo" button appears immediately.
-// No auto-advance — user always controls progression.
+// Hardened video playback gate:
+//  - onEnded is only accepted if the video has actually been playing for real
+//    (wall-clock time >= MIN_REAL_PLAY_MS AND currentTime near duration)
+//  - a spurious ended event fired before real playback is ignored
+//  - if autoplay is blocked, a manual play button appears
+//  - Continuer is never shown until the gate passes
+
+const MIN_REAL_PLAY_MS = 12_000; // ignore ended events fired before this
 
 function VideoStage({ onContinue }: { onContinue: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ended, setEnded] = useState(false);
   const [needsManualPlay, setNeedsManualPlay] = useState(false);
+  // wall-clock timestamp when actual playback started (first onPlaying)
+  const playStartRef = useRef<number | null>(null);
 
   useEffect(() => {
     const vid = videoRef.current;
@@ -29,10 +36,29 @@ function VideoStage({ onContinue }: { onContinue: () => void }) {
     vid.currentTime = 0;
 
     vid.play().catch(() => {
-      // Autoplay blocked — show manual play button
       setNeedsManualPlay(true);
     });
   }, []);
+
+  const handlePlaying = () => {
+    // Record the first moment real playback begins (not just buffering)
+    if (playStartRef.current === null) {
+      playStartRef.current = Date.now();
+    }
+  };
+
+  const handleEnded = () => {
+    const vid = videoRef.current;
+    const wallMs = playStartRef.current !== null ? Date.now() - playStartRef.current : 0;
+
+    // Guard: ignore spurious ended events fired before real playback started
+    if (wallMs < MIN_REAL_PLAY_MS) return;
+
+    // Guard: if duration is known, require currentTime to be within 3s of end
+    if (vid && vid.duration > 0 && vid.currentTime < vid.duration - 3) return;
+
+    setEnded(true);
+  };
 
   const manualPlay = () => {
     videoRef.current?.play().catch(() => {});
@@ -46,7 +72,8 @@ function VideoStage({ onContinue }: { onContinue: () => void }) {
         src="/vinocap_demo_video_qr.mp4"
         playsInline
         preload="auto"
-        onEnded={() => setEnded(true)}
+        onPlaying={handlePlaying}
+        onEnded={handleEnded}
         className="w-full h-full object-cover object-center"
       />
 
@@ -274,7 +301,7 @@ export function QREntryPage() {
         <img
           src="/vinocap_video_launcher.png"
           alt="Lancer l'expérience VinoCap"
-          className="w-full h-full object-cover object-center select-none"
+          className="w-full h-full object-contain object-center select-none"
           draggable={false}
         />
       </div>
