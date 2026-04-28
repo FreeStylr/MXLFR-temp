@@ -1,18 +1,3 @@
-Use this as the full QR page fix.
-
-This version does the things that matter:
-
-the video is mounted only in video state
-the choice buttons are mounted only in choice state
-the transition happens only on native onEnded
-there is no onTimeUpdate fallback
-there is no fullscreen request
-playback is reset to 0 every time
-it uses the newer video filename:
-/vinocap_demo_video_qr.mp4
-
-If your current MP4 filename is different, change only that one src line.
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Wine, Search, ChevronLeft, AlertCircle } from 'lucide-react';
