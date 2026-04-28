@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import App from './App.tsx';
 import { WineShell } from './vin/WineShell.tsx';
 import { VinPage } from './vin/pages/VinPage.tsx';
@@ -20,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/vin/paiement/annule" element={<PaymentStatusPage intent="annule" />} />
         <Route path="/vin/finaliser" element={<FinaliserPage />} />
         <Route path="/vin/*" element={<WineShell />} />
+        <Route path="/vinocap/qr" element={<Navigate to="/vin/qr" replace />} />
         <Route path="/*" element={<App />} />
       </Routes>
     </BrowserRouter>
