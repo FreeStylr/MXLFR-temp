@@ -3,7 +3,7 @@ import {
   Search, X, ChevronDown, Loader2, AlertCircle, ExternalLink, ChevronRight,
   ShieldAlert, Save,
 } from 'lucide-react';
-import { RUNS } from '../../components/ReservationModal';
+import { fetchAllRuns, type Run } from '../../lib/runs';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -122,11 +122,13 @@ async function patchReservation(
 function DetailPanel({
   r: initial,
   opsToken,
+  runs,
   onClose,
   onUpdated,
 }: {
   r: Reservation;
   opsToken: string;
+  runs: Run[];
   onClose: () => void;
   onUpdated: (updated: Reservation) => void;
 }) {
@@ -308,8 +310,8 @@ function DetailPanel({
                   className="appearance-none w-full bg-stone-50 border border-stone-200 rounded-lg pl-3 pr-7 py-2 text-xs outline-none focus:border-stone-400 cursor-pointer text-stone-700"
                 >
                   <option value="">— non définie —</option>
-                  {RUNS.map(r => (
-                    <option key={r.label} value={r.label}>{r.label} (limite {r.cutoffDate})</option>
+                  {runs.map(r => (
+                    <option key={r.label} value={r.label}>{r.label} (limite {r.cutoff_date})</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-400 pointer-events-none" />
@@ -410,11 +412,16 @@ export function ReservationsPage({ opsToken }: ReservationsPageProps) {
   const [rows, setRows] = useState<Reservation[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [runs, setRuns] = useState<Run[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [methodFilter, setMethodFilter] = useState('');
   const [detail, setDetail] = useState<Reservation | null>(null);
   const [err, setErr] = useState('');
+
+  useEffect(() => {
+    fetchAllRuns(opsToken).then(setRuns).catch(() => {});
+  }, [opsToken]);
 
   const load = useCallback(async () => {
     setLoading(true); setErr('');
@@ -604,6 +611,7 @@ export function ReservationsPage({ opsToken }: ReservationsPageProps) {
         <DetailPanel
           r={detail}
           opsToken={opsToken}
+          runs={runs}
           onClose={() => setDetail(null)}
           onUpdated={(updated) => {
             setRows(prev => prev.map(row => row.id === updated.id ? updated : row));

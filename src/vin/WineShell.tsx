@@ -16,6 +16,7 @@ import { AdminCampaignsPage } from './pages/admin/AdminCampaignsPage';
 import { AdminCampaignDetailPage } from './pages/admin/AdminCampaignDetailPage';
 import { ProspectsPage } from './pages/admin/ProspectsPage';
 import { ReservationsPage } from './pages/admin/ReservationsPage';
+import { RunsPage } from './pages/admin/RunsPage';
 import { OpsGate, useOpsAuth } from './pages/ops/OpsGate';
 
 const ASSOCIATION_CANONICAL = '/vin/association/route-des-vignerons-et-des-pecheurs';
@@ -223,6 +224,7 @@ function OpsShell() {
         <Route path="campaigns" element={<AdminCampaignsPage />} />
         <Route path="prospects" element={<ProspectsPage opsToken={opsToken} />} />
         <Route path="reservations" element={<ReservationsPage opsToken={opsToken} />} />
+        <Route path="runs" element={<RunsPage opsToken={opsToken} />} />
         <Route path="*" element={<Navigate to="/vin/ops-42xf/campaigns" replace />} />
       </Routes>
     </AdminLayout>

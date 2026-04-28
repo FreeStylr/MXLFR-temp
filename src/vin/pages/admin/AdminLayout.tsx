@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, ArrowLeft, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, CalendarClock, ArrowLeft, LogOut } from 'lucide-react';
 
 const OPS_ROUTE = '/vin/ops-42xf';
 
@@ -65,6 +65,17 @@ export function AdminLayout({ children, onRevoke }: AdminLayoutProps) {
                 >
                   <BookOpen className="w-3.5 h-3.5" />
                   Réservations
+                </Link>
+                <Link
+                  to={`${OPS_ROUTE}/runs`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    location.pathname.startsWith(`${OPS_ROUTE}/runs`)
+                      ? 'bg-white/10 text-white'
+                      : 'text-stone-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <CalendarClock className="w-3.5 h-3.5" />
+                  Éditions
                 </Link>
               </nav>
 

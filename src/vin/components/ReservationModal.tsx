@@ -2,28 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ArrowRight, Building2, Loader2, CalendarClock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { fetchActiveRuns, isRunOpen, type Run } from '../lib/runs';
 
 type StructureType = 'domaine' | 'cooperative';
 type PaymentMethod = 'carte' | 'virement';
 type SubmitState = 'idle' | 'saving' | 'payment' | 'coop-success' | 'error';
-
-// Manually-defined run calendar. cutoff = distribution date minus 45 days.
-// Format: { label, cutoffDate (ISO), distributionDate (display only) }
-export const RUNS = [
-  { label: 'Mai 2026',   cutoffDate: '2026-03-16', distributionLabel: '30 avril 2026' },
-  { label: 'Juin 2026',  cutoffDate: '2026-04-16', distributionLabel: '31 mai 2026' },
-  { label: 'Juillet 2026', cutoffDate: '2026-05-17', distributionLabel: '1 juillet 2026' },
-] as const;
-
-export type RunLabel = typeof RUNS[number]['label'];
-
-function isRunOpen(cutoffDate: string) {
-  return new Date() <= new Date(cutoffDate);
-}
-
-function firstOpenRun() {
-  return RUNS.find(r => isRunOpen(r.cutoffDate)) ?? null;
-}
 
 function fmtCutoff(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -39,7 +22,7 @@ interface FormState {
   email: string;
   mobile: string;
   paymentMethod: PaymentMethod;
-  runMonth: RunLabel;
+  runMonth: string;
   cguAccepted: boolean;
 }
 
@@ -55,6 +38,8 @@ function generateReference(zip: string, lastName: string): string {
 
 export function ReservationModal({ onClose }: ReservationModalProps) {
   const navigate = useNavigate();
+  const [runs, setRuns] = useState<Run[]>([]);
+  const [runsLoading, setRunsLoading] = useState(true);
   const [form, setForm] = useState<FormState>({
     prenom: '',
     nom: '',
@@ -65,12 +50,23 @@ export function ReservationModal({ onClose }: ReservationModalProps) {
     email: '',
     mobile: '',
     paymentMethod: 'carte',
-    runMonth: (firstOpenRun() ?? RUNS[0]).label,
+    runMonth: '',
     cguAccepted: false,
   });
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchActiveRuns().then(data => {
+      setRuns(data);
+      // Auto-select first open run
+      const firstOpen = data.find(r => isRunOpen(r.cutoff_date));
+      if (firstOpen) setForm(f => ({ ...f, runMonth: firstOpen.label }));
+      else if (data.length > 0) setForm(f => ({ ...f, runMonth: data[0].label }));
+      setRunsLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -107,7 +103,7 @@ export function ReservationModal({ onClose }: ReservationModalProps) {
       ? 'awaiting_wire'
       : 'awaiting_card_payment';
 
-    const selectedRun = RUNS.find(r => r.label === form.runMonth) ?? RUNS[0];
+    const selectedRun = runs.find(r => r.label === form.runMonth) ?? runs[0];
 
     const { error } = await supabase.from('wine_reservations').insert({
       first_name: form.prenom.trim(),
@@ -123,7 +119,7 @@ export function ReservationModal({ onClose }: ReservationModalProps) {
       payment_reference: ref,
       status,
       run_month: form.runMonth,
-      cutoff_date: selectedRun.cutoffDate,
+      cutoff_date: selectedRun?.cutoff_date ?? null,
     });
 
     if (error) {
@@ -296,15 +292,20 @@ export function ReservationModal({ onClose }: ReservationModalProps) {
             </div>
           </Field>
 
-          {(() => {
-            const openRuns = RUNS.filter(r => isRunOpen(r.cutoffDate));
+          {runsLoading ? (
+            <div className="flex items-center gap-2 py-2" style={{ color: '#9a8f7e' }}>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-[12px]">Chargement des éditions…</span>
+            </div>
+          ) : (() => {
+            const openRuns = runs.filter(r => isRunOpen(r.cutoff_date));
             const hasNoOpenRun = openRuns.length === 0;
             return (
               <div>
                 <label className="block text-[11px] font-semibold mb-2 uppercase tracking-wider" style={{ color: '#9a8f7e' }}>Édition souhaitée</label>
                 <div className="flex flex-wrap gap-2">
-                  {RUNS.map((run) => {
-                    const closed = !isRunOpen(run.cutoffDate);
+                  {runs.map((run) => {
+                    const closed = !isRunOpen(run.cutoff_date);
                     return (
                       <RadioChip
                         key={run.label}
@@ -329,7 +330,7 @@ export function ReservationModal({ onClose }: ReservationModalProps) {
                   </div>
                 ) : (
                   (() => {
-                    const run = RUNS.find(r => r.label === form.runMonth);
+                    const run = runs.find(r => r.label === form.runMonth);
                     if (!run) return null;
                     return (
                       <div
@@ -339,10 +340,10 @@ export function ReservationModal({ onClose }: ReservationModalProps) {
                         <CalendarClock className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#2d968a' }} />
                         <div>
                           <p className="text-[12px] font-semibold mb-0.5" style={{ color: '#1e8a7e' }}>
-                            Date limite d'intégration&nbsp;: {fmtCutoff(run.cutoffDate)}.
+                            Date limite d'intégration&nbsp;: {fmtCutoff(run.cutoff_date)}.
                           </p>
                           <p className="text-[11px] leading-relaxed" style={{ color: '#5a8a82' }}>
-                            Distribution&nbsp;: {run.distributionLabel}.
+                            Distribution&nbsp;: {run.distribution_label}.
                           </p>
                         </div>
                       </div>

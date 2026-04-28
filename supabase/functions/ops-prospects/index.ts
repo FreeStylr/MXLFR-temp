@@ -26,8 +26,6 @@ function json(data: unknown, status = 200) {
 }
 
 // POST /lookup
-// Body: { emails: string[], mobiles: string[], domain_names: string[] }
-// Returns: { reservations: ReservationMatch[], profiles: ProfileMatch[] }
 async function handleLookup(db: ReturnType<typeof createClient>, body: Record<string, unknown>) {
   const emails = (body.emails as string[]) ?? [];
   const mobiles = (body.mobiles as string[]) ?? [];
@@ -37,7 +35,6 @@ async function handleLookup(db: ReturnType<typeof createClient>, body: Record<st
   const cleanMobiles = mobiles.filter(Boolean).map(m => m.replace(/\s/g, ''));
   const cleanDomains = domainNames.filter(Boolean).map(d => d.toLowerCase().trim());
 
-  // Fetch matching reservations (by email OR mobile OR structure_name)
   const resvQuery = db
     .from("wine_reservations")
     .select("id, email, mobile, structure_name, status, payment_reference, payment_method");
@@ -51,7 +48,6 @@ async function handleLookup(db: ReturnType<typeof createClient>, body: Record<st
     ? await resvQuery.or(orParts.join(","))
     : await resvQuery.limit(0);
 
-  // Fetch matching profiles (by email OR phone OR domaine_name)
   const profQuery = db
     .from("wine_profiles")
     .select("id, email, phone, domaine_name, slug, is_published");
@@ -73,17 +69,81 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+  const path = url.pathname.replace(/^\/ops-prospects/, "");
+
+  // Public read-only: GET /runs — no ops token required
+  // Returns all active runs ordered by sort_order for the booking modal
+  if (req.method === "GET" && path === "/runs") {
+    const db = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { data, error } = await db
+      .from("wine_runs")
+      .select("id, label, cutoff_date, distribution_label, sort_order, is_active")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    if (error) return json({ error: error.message }, 500);
+    return json({ data: data ?? [] });
+  }
+
+  // All other routes require ops token
   const token = req.headers.get("X-Ops-Token") ?? "";
   if (!OPS_TOKEN || token !== OPS_TOKEN) {
     return unauthorized();
   }
 
   const db = createClient(SUPABASE_URL, SERVICE_KEY);
-  const url = new URL(req.url);
-  const path = url.pathname.replace(/^\/ops-prospects/, "");
 
   try {
-    // GET /reservations — list wine_reservations with optional search/filter
+    // GET /runs/all — all runs (including inactive) for admin management
+    if (req.method === "GET" && path === "/runs/all") {
+      const { data, error } = await db
+        .from("wine_runs")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) return json({ error: error.message }, 500);
+      return json({ data: data ?? [] });
+    }
+
+    // PUT /runs/:id — update a run
+    if (req.method === "PUT" && path.match(/^\/runs\/[a-z0-9-]+$/)) {
+      const id = path.replace("/runs/", "");
+      const body = await req.json();
+      const ALLOWED = ["label", "cutoff_date", "distribution_label", "sort_order", "is_active"];
+      const patch: Record<string, unknown> = {};
+      for (const k of ALLOWED) {
+        if (k in body) patch[k] = body[k];
+      }
+      if (Object.keys(patch).length === 0) return json({ error: "No patchable fields" }, 400);
+      const { data, error } = await db
+        .from("wine_runs")
+        .update(patch)
+        .eq("id", id)
+        .select()
+        .maybeSingle();
+      if (error) return json({ error: error.message }, 500);
+      if (!data) return json({ error: "Not found" }, 404);
+      return json({ data });
+    }
+
+    // POST /runs — create a new run
+    if (req.method === "POST" && path === "/runs") {
+      const body = await req.json();
+      const { data, error } = await db
+        .from("wine_runs")
+        .insert({
+          label: body.label,
+          cutoff_date: body.cutoff_date,
+          distribution_label: body.distribution_label ?? '',
+          sort_order: body.sort_order ?? 0,
+          is_active: body.is_active ?? true,
+        })
+        .select()
+        .maybeSingle();
+      if (error) return json({ error: error.message }, 500);
+      return json({ data }, 201);
+    }
+
+    // GET /reservations — list wine_reservations
     if (req.method === "GET" && path === "/reservations") {
       const search = url.searchParams.get("search") ?? "";
       const status = url.searchParams.get("status") ?? "";
@@ -110,11 +170,10 @@ Deno.serve(async (req: Request) => {
       return json({ data, count });
     }
 
-    // PATCH /reservations/:id — update override fields (manual_override, override_note, status)
+    // PATCH /reservations/:id — update override fields
     if (req.method === "PATCH" && path.match(/^\/reservations\/[a-z0-9-]+$/)) {
       const id = path.replace("/reservations/", "");
       const body = await req.json();
-      // Only allow safe ops-writable fields — never allow changing payment data
       const allowed: Record<string, unknown> = {};
       const ALLOWED_KEYS = ["manual_override", "override_note", "status", "run_month", "cutoff_date", "notes"];
       for (const key of ALLOWED_KEYS) {
@@ -141,9 +200,8 @@ Deno.serve(async (req: Request) => {
       if ("start_at" in body) patch.start_at = body.start_at ?? null;
       if ("end_at" in body) patch.end_at = body.end_at ?? null;
       if (Object.keys(patch).length === 0) return json({ error: "No patchable fields" }, 400);
-      patch.updated_at = new Date().toISOString();
       const { data, error } = await db
-        .from("vinocap_campaigns")
+        .from("wine_campaigns")
         .update(patch)
         .eq("id", id)
         .select()
@@ -153,13 +211,13 @@ Deno.serve(async (req: Request) => {
       return json({ data });
     }
 
-    // POST /lookup — batch match against reservations + profiles
+    // POST /lookup
     if (req.method === "POST" && path === "/lookup") {
       const body = await req.json();
       return await handleLookup(db, body);
     }
 
-    // GET / — list with optional search/filter
+    // GET / — list prospects
     if (req.method === "GET" && (path === "" || path === "/")) {
       const search = url.searchParams.get("search") ?? "";
       const status = url.searchParams.get("status") ?? "";
@@ -188,7 +246,7 @@ Deno.serve(async (req: Request) => {
       return json({ data, count });
     }
 
-    // GET /:id
+    // GET /:id — get single prospect
     if (req.method === "GET" && path.match(/^\/[a-z0-9-]+$/)) {
       const id = path.slice(1);
       const { data, error } = await db.from("wine_prospects").select("*").eq("id", id).maybeSingle();
@@ -197,7 +255,7 @@ Deno.serve(async (req: Request) => {
       return json({ data });
     }
 
-    // POST / — create one or bulk insert array
+    // POST / — create one or bulk
     if (req.method === "POST" && (path === "" || path === "/")) {
       const body = await req.json();
       const rows = Array.isArray(body) ? body : [body];
@@ -206,7 +264,7 @@ Deno.serve(async (req: Request) => {
       return json({ data }, 201);
     }
 
-    // PUT /:id — update
+    // PUT /:id — update prospect
     if (req.method === "PUT" && path.match(/^\/[a-z0-9-]+$/)) {
       const id = path.slice(1);
       const body = await req.json();
@@ -218,7 +276,7 @@ Deno.serve(async (req: Request) => {
       return json({ data });
     }
 
-    // DELETE /:id
+    // DELETE /:id — delete prospect
     if (req.method === "DELETE" && path.match(/^\/[a-z0-9-]+$/)) {
       const id = path.slice(1);
       const { error } = await db.from("wine_prospects").delete().eq("id", id);
