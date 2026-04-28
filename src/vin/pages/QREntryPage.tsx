@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Wine, Search, ChevronLeft, AlertCircle } from 'lucide-react';
+import { ArrowRight, Wine, Search, ChevronLeft, AlertCircle, Play } from 'lucide-react';
 
 const DEMO_CODE_MAP: Record<string, string> = {
   '001': 'serre-du-littoral',
@@ -12,33 +12,32 @@ const DEMO_CODE_MAP: Record<string, string> = {
 
 type Stage = 'poster' | 'video' | 'choice' | 'codeEntry';
 
-function VideoPlayer({ onComplete }: { onComplete: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const completedRef = useRef(false);
+// ── VideoStage ───────────────────────────────────────────────────────────────
+// Plays the video and shows an explicit "Continuer" button when done.
+// If autoplay fails a "Lancer la vidéo" button appears immediately.
+// No auto-advance — user always controls progression.
 
-  const handleEnded = useCallback(() => {
-    if (completedRef.current) return;
-    completedRef.current = true;
-    onComplete();
-  }, [onComplete]);
+function VideoStage({ onContinue }: { onContinue: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [ended, setEnded] = useState(false);
+  const [needsManualPlay, setNeedsManualPlay] = useState(false);
 
   useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
 
-    completedRef.current = false;
     vid.currentTime = 0;
 
-    const start = async () => {
-      try {
-        await vid.play();
-      } catch (_) {
-        // swallow autoplay/play errors; user interaction already triggered this flow
-      }
-    };
-
-    start();
+    vid.play().catch(() => {
+      // Autoplay blocked — show manual play button
+      setNeedsManualPlay(true);
+    });
   }, []);
+
+  const manualPlay = () => {
+    videoRef.current?.play().catch(() => {});
+    setNeedsManualPlay(false);
+  };
 
   return (
     <div className="fixed inset-0" style={{ background: '#000' }}>
@@ -47,17 +46,62 @@ function VideoPlayer({ onComplete }: { onComplete: () => void }) {
         src="/vinocap_demo_video_qr.mp4"
         playsInline
         preload="auto"
-        onEnded={handleEnded}
+        onEnded={() => setEnded(true)}
         className="w-full h-full object-cover object-center"
       />
+
+      {/* Autoplay blocked fallback */}
+      {needsManualPlay && !ended && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <button
+            onClick={manualPlay}
+            className="flex flex-col items-center gap-3 transition-opacity hover:opacity-80"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center"
+              style={{
+                background: 'rgba(34,199,201,0.18)',
+                border: '2px solid rgba(34,199,201,0.5)',
+              }}
+            >
+              <Play className="w-8 h-8 text-white ml-1" fill="white" />
+            </div>
+            <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.8)' }}>
+              Lancer la vidéo
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Video ended — explicit continue */}
+      {ended && (
+        <div
+          className="absolute inset-0 flex flex-col items-end justify-end pb-12 px-6"
+          style={{ background: 'linear-gradient(to top, rgba(10,24,28,0.85) 0%, transparent 50%)' }}
+        >
+          <button
+            onClick={onContinue}
+            className="w-full max-w-sm mx-auto flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-base transition-all active:scale-[0.98]"
+            style={{
+              background: 'linear-gradient(135deg, #22C7C9 0%, #1ab0b2 100%)',
+              boxShadow: '0 8px 32px -8px rgba(34,199,201,0.7)',
+              color: '#fff',
+            }}
+          >
+            Continuer <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
+// ── QREntryPage ──────────────────────────────────────────────────────────────
+
 export function QREntryPage() {
   const navigate = useNavigate();
   const [stage, setStage] = useState<Stage>('poster');
-  const [videoKey, setVideoKey] = useState(0);
   const [codeFrom, setCodeFrom] = useState<'poster' | 'choice'>('choice');
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState('');
@@ -67,38 +111,22 @@ export function QREntryPage() {
     meta.name = 'robots';
     meta.content = 'noindex, nofollow';
     document.head.appendChild(meta);
-
-    return () => {
-      document.head.removeChild(meta);
-    };
-  }, []);
-
-  const launchVideo = () => {
-    setVideoKey((k) => k + 1);
-    setStage('video');
-  };
-
-  const handleVideoComplete = useCallback(() => {
-    setStage('choice');
+    return () => { document.head.removeChild(meta); };
   }, []);
 
   const handleCodeSubmit = () => {
     const trimmed = code.trim();
     if (!trimmed) return;
-
     setCodeError('');
     const slug = DEMO_CODE_MAP[trimmed];
-
     if (slug) {
-      navigate(`/vinocap/carte/${slug}`);
+      navigate(`/vin/carte/${slug}`);
     } else {
       setCodeError('Code non reconnu. Vérifiez-le ou explorez les domaines disponibles.');
     }
   };
 
-  const goDiscover = () => navigate('/vinocap/decouvrir');
-  const goAllDomaines = () => navigate('/vinocap/domaines');
-
+  // ── codeEntry stage ────────────────────────────────────────────────────────
   if (stage === 'codeEntry') {
     return (
       <div
@@ -107,11 +135,7 @@ export function QREntryPage() {
       >
         <div className="w-full max-w-sm mx-auto px-6">
           <button
-            onClick={() => {
-              setCode('');
-              setCodeError('');
-              setStage(codeFrom);
-            }}
+            onClick={() => { setCode(''); setCodeError(''); setStage(codeFrom); }}
             className="flex items-center gap-1.5 text-sm mb-8 transition-opacity hover:opacity-70"
             style={{ color: 'rgba(121,215,242,0.7)' }}
           >
@@ -120,10 +144,7 @@ export function QREntryPage() {
 
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6"
-            style={{
-              background: 'rgba(34,199,201,0.12)',
-              border: '1px solid rgba(34,199,201,0.25)',
-            }}
+            style={{ background: 'rgba(34,199,201,0.12)', border: '1px solid rgba(34,199,201,0.25)' }}
           >
             <Search className="w-5 h-5" style={{ color: '#22C7C9' }} />
           </div>
@@ -139,19 +160,14 @@ export function QREntryPage() {
             type="text"
             inputMode="numeric"
             value={code}
-            onChange={(e) => {
-              setCode(e.target.value);
-              setCodeError('');
-            }}
+            onChange={(e) => { setCode(e.target.value); setCodeError(''); }}
             onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
             placeholder="Ex. 001"
             autoFocus
             className="w-full text-center text-2xl font-bold tracking-[0.3em] py-4 rounded-2xl mb-3 outline-none transition-all"
             style={{
               background: 'rgba(255,255,255,0.06)',
-              border: codeError
-                ? '1px solid rgba(239,68,68,0.5)'
-                : '1px solid rgba(121,215,242,0.25)',
+              border: codeError ? '1px solid rgba(239,68,68,0.5)' : '1px solid rgba(121,215,242,0.25)',
               color: '#FCFBF7',
             }}
           />
@@ -179,6 +195,7 @@ export function QREntryPage() {
     );
   }
 
+  // ── choice stage ───────────────────────────────────────────────────────────
   if (stage === 'choice') {
     return (
       <div
@@ -188,10 +205,7 @@ export function QREntryPage() {
         <div className="w-full max-w-sm mx-auto text-center">
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6"
-            style={{
-              background: 'rgba(34,199,201,0.12)',
-              border: '1px solid rgba(34,199,201,0.25)',
-            }}
+            style={{ background: 'rgba(34,199,201,0.12)', border: '1px solid rgba(34,199,201,0.25)' }}
           >
             <Wine className="w-6 h-6" style={{ color: '#22C7C9' }} />
           </div>
@@ -207,7 +221,7 @@ export function QREntryPage() {
 
           <div className="space-y-3">
             <button
-              onClick={goDiscover}
+              onClick={() => navigate('/vin/decouvrir')}
               className="w-full flex items-center justify-between px-6 py-4 rounded-2xl font-bold text-white transition-all hover:scale-[1.02] duration-200 group"
               style={{
                 background: 'linear-gradient(135deg, #22C7C9 0%, #1ab0b2 100%)',
@@ -219,10 +233,7 @@ export function QREntryPage() {
             </button>
 
             <button
-              onClick={() => {
-                setCodeFrom('choice');
-                setStage('codeEntry');
-              }}
+              onClick={() => { setCodeFrom('choice'); setStage('codeEntry'); }}
               className="w-full flex items-center justify-between px-6 py-4 rounded-2xl font-bold transition-all hover:scale-[1.02] duration-200 group"
               style={{
                 background: 'rgba(255,255,255,0.05)',
@@ -236,7 +247,7 @@ export function QREntryPage() {
           </div>
 
           <button
-            onClick={goAllDomaines}
+            onClick={() => navigate('/vin/domaines')}
             className="mt-6 text-sm transition-opacity hover:opacity-70"
             style={{ color: 'rgba(121,215,242,0.5)' }}
           >
@@ -247,15 +258,17 @@ export function QREntryPage() {
     );
   }
 
+  // ── video stage ────────────────────────────────────────────────────────────
   if (stage === 'video') {
-    return <VideoPlayer key={videoKey} onComplete={handleVideoComplete} />;
+    return <VideoStage onContinue={() => setStage('choice')} />;
   }
 
+  // ── poster stage (default) ─────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: '#0a181c' }}>
       <div
         className="absolute inset-0 cursor-pointer"
-        onClick={launchVideo}
+        onClick={() => setStage('video')}
         style={{ WebkitTapHighlightColor: 'transparent' }}
       >
         <img
@@ -268,11 +281,7 @@ export function QREntryPage() {
 
       <div className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setCodeFrom('poster');
-            setStage('codeEntry');
-          }}
+          onClick={(e) => { e.stopPropagation(); setCodeFrom('poster'); setStage('codeEntry'); }}
           className="pointer-events-auto text-xs font-semibold px-4 py-2 rounded-full transition-all hover:opacity-80"
           style={{
             background: 'rgba(10,24,28,0.55)',
