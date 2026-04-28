@@ -20,7 +20,7 @@ type Stage = 'poster' | 'video' | 'choice' | 'codeEntry';
 //  - if autoplay is blocked, a manual play button appears
 //  - Continuer is never shown until the gate passes
 
-const MIN_REAL_PLAY_MS = 12_000; // ignore ended events fired before this
+const MIN_REAL_PLAY_MS = 16_000; // ignore ended events fired before this
 
 function VideoStage({ onContinue }: { onContinue: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -55,7 +55,7 @@ function VideoStage({ onContinue }: { onContinue: () => void }) {
     if (wallMs < MIN_REAL_PLAY_MS) return;
 
     // Guard: if duration is known, require currentTime to be within 3s of end
-    if (vid && vid.duration > 0 && vid.currentTime < vid.duration - 3) return;
+    if (vid && vid.duration > 0 && vid.currentTime < vid.duration - 1) return;
 
     setEnded(true);
   };
