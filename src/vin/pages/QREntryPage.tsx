@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Wine, Search, ChevronLeft, AlertCircle } from 'lucide-react';d
+import { ArrowRight, Wine, Search, ChevronLeft, AlertCircle } from 'lucide-react';
+
 const DEMO_CODE_MAP: Record<string, string> = {
   '001': 'serre-du-littoral',
   '002': 'mas-saint-chinian',
@@ -287,7 +288,3 @@ export function QREntryPage() {
     </div>
   );
 }
-
-The important part is the VideoPlayer.
-
-If you want, paste your current VideoPlayer block after you apply it and I’ll verify it fast.
