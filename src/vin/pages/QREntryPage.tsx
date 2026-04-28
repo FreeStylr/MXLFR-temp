@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Wine, Search, ChevronLeft, AlertCircle } from 'lucide-react';
-
+import { ArrowRight, Wine, Search, ChevronLeft, AlertCircle } from 'lucide-react';d
 const DEMO_CODE_MAP: Record<string, string> = {
   '001': 'serre-du-littoral',
   '002': 'mas-saint-chinian',
