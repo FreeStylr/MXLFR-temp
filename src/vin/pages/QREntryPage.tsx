@@ -69,7 +69,7 @@ function VideoStage({ onContinue }: { onContinue: () => void }) {
     <div className="fixed inset-0" style={{ background: '#000' }}>
       <video
         ref={videoRef}
-        src="/vinocap_demo_video_qr.mp4"
+        src="/Maxilocal Wine Launch_ Vinia_1080p.mp4"
         playsInline
         preload="auto"
         onPlaying={handlePlaying}
