@@ -69,7 +69,7 @@ function VideoStage({ onContinue }: { onContinue: () => void }) {
     <div className="fixed inset-0" style={{ background: '#000' }}>
       <video
         ref={videoRef}
-        src="/Maxilocal Wine Launch_ Vinia_1080p.mp4"
+        src="/Maxilocal%20Wine%20Launch_%20Vinia_1080p.mp4"
         playsInline
         preload="auto"
         onPlaying={handlePlaying}
@@ -299,7 +299,7 @@ export function QREntryPage() {
         style={{ WebkitTapHighlightColor: 'transparent' }}
       >
         <img
-          src="/vinocap_video_launcher.png"
+          src="/Vinia_Play_Video.png"
           alt="Lancer l'expérience VinoCap"
           className="w-full h-full object-contain object-center select-none"
           draggable={false}
